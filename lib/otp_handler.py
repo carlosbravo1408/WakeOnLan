@@ -2,7 +2,7 @@ import pyotp
 
 
 class OtpHandler:
-    def __init__(self, secret, name, issuer_name="AlienNerd Dev"):
+    def __init__(self, secret: str, name: str, issuer_name: str = ""):
         self._name = name
         self._issuer_name = issuer_name
         self._totp = pyotp.TOTP(secret)
