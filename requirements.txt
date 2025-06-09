@@ -1,0 +1,5 @@
+sqlalchemy~=2.0.41
+pytelegrambotapi~=4.27.0
+qrcode~=8.2
+pyotp~=2.9.0
+python-dotenv~=1.1.0
