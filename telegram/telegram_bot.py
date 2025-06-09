@@ -18,7 +18,6 @@ class TelegramBot:
             exception_handler=TelegramBotExceptionHandler(token=self._token)
         )
 
-
     def start_polling(self) -> None:
         self.__log.info("Starting Telegram Bot...")
         self._bot.infinity_polling(

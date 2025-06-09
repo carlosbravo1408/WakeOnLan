@@ -14,7 +14,7 @@ class DataBase:
     _instance = None
     _lock = threading.Lock()
 
-    def __new__(cls, db_url = f"sqlite:///{DB}"):
+    def __new__(cls, db_url: str = f"sqlite:///{DB}"):
         with cls._lock:
             if cls._instance is None:
                 cls._instance = super().__new__(cls)
@@ -24,12 +24,14 @@ class DataBase:
                     connect_args={'check_same_thread': False}
                 )
                 cls._instance.SessionLocal = sessionmaker(
-                    bind=cls._instance.engine, expire_on_commit=False)
+                    bind=cls._instance.engine, expire_on_commit=False
+                )
                 BaseModel.metadata.create_all(cls._instance.engine)
             return cls._instance
 
     def get_session(self) -> Session:
         return self.SessionLocal()
+
 
 @contextmanager
 def get_db_session():

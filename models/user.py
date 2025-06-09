@@ -15,4 +15,3 @@ class User(BaseModel):
         back_populates="user",
         cascade="all, delete-orphan"
     )
-

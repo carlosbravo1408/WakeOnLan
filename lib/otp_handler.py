@@ -2,7 +2,7 @@ import pyotp
 
 
 class OtpHandler:
-    def __init__(self, secret, name,  issuer_name="AlienNerd Dev"):
+    def __init__(self, secret, name, issuer_name="AlienNerd Dev"):
         self._name = name
         self._issuer_name = issuer_name
         self._totp = pyotp.TOTP(secret)
@@ -16,6 +16,7 @@ class OtpHandler:
     def generate_qr(self):
         try:
             from qrcode.main import QRCode
+
             qr = QRCode(version=1, box_size=10, border=4)
             qr.add_data(self.get_uri())
             qr.make(fit=True)

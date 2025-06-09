@@ -9,17 +9,11 @@ class Device(BaseModel):
     name = Column(String, nullable=False)
     id_user = Column(
         Integer,
-        ForeignKey(
-            "user.id_user",
-            ondelete="CASCADE",
-            onupdate="CASCADE"
-        ),
-        nullable=False
+        ForeignKey("user.id_user", ondelete="CASCADE", onupdate="CASCADE"),
+        nullable=False,
     )
 
     user = relationship("User", back_populates="devices")
     macs = relationship(
-        "DeviceMac",
-        back_populates="device",
-        cascade="all, delete-orphan"
+        "DeviceMac", back_populates="device", cascade="all, delete-orphan"
     )

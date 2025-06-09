@@ -9,7 +9,6 @@ class TelegramBotExceptionHandler(ExceptionHandler):
         self._token = token
 
     def handle(self, exception):
-        exception_message = str(exception).replace(self._token, 'xx:xxxxx')
+        exception_message = str(exception).replace(self._token, "xx:xxxxx")
         self.__log.error(exception_message)
         return False
-

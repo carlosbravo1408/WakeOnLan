@@ -11,7 +11,7 @@ class BaseModel(base):
 
     @declared_attr
     def __tablename__(cls):
-        return re.compile(r'(?<!^)(?=[A-Z])').sub('_', cls.__name__).lower()
+        return re.compile(r"(?<!^)(?=[A-Z])").sub("_", cls.__name__).lower()
 
     @classmethod
     def get_primary_column(cls) -> InstrumentedAttribute:

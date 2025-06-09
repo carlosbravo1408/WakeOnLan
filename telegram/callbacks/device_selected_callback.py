@@ -36,7 +36,8 @@ class DeviceSelectedCallback(BaseCallback):
                     return
                 bot.send_message(
                     call.message.chat.id,
-                    f"🔒 Please submit your OTP code to confirm access to '{device.name}'."
+                    f"🔒 Please submit your OTP code to confirm access to '"
+                    f"{device.name}'.",
                 )
                 bot.register_next_step_handler(
                     call.message,
@@ -44,8 +45,7 @@ class DeviceSelectedCallback(BaseCallback):
                 )
             else:
                 bot.send_message(
-                    call.message.chat.id,
-                    f"Waking '{device.name}' on LAN."
+                    call.message.chat.id, f"Waking '{device.name}' on LAN."
                 )
                 cls.wake_on_lan(device)
 
@@ -67,10 +67,7 @@ class DeviceSelectedCallback(BaseCallback):
         otp = message.text.strip()
         top_handler = OtpHandler(user.otp_secret, user.name)
         if top_handler.verify(otp):
-            bot.send_message(
-                message.chat.id,
-                "✅ Valid OTP. Waking PC on LAN."
-            )
+            bot.send_message(message.chat.id, "✅ Valid OTP. Waking PC on LAN.")
             cls.wake_on_lan(device)
         else:
             bot.send_message(
