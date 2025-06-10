@@ -1,18 +1,20 @@
 from functools import partial
 
+from sqlalchemy.orm import joinedload
 from telebot import TeleBot
 from telebot.types import Message
 
+from lib.constants import Constants
 from lib.db import get_db_session
-from models import Device, User
 from lib.otp_handler import OtpHandler
-from telegram.callbacks.base_callback import BaseCallback
 from lib.wake_on_lan import WakeOnLan
+from models import Device, User
+from telegram.callbacks.base_callback import BaseCallback
 
 
 class DeviceSelectedCallback(BaseCallback):
     id = "device"
-    has_otp_validation = False
+    has_otp_validation = Constants.HAS_OTP_VALIDATION.lower() in ["1", "true"]
 
     @classmethod
     def callback(cls, call, bot: TeleBot):
@@ -20,10 +22,13 @@ class DeviceSelectedCallback(BaseCallback):
             telegram_user_id = call.from_user.id
             id_device = int(call.data.split(":")[1])
             user = session.query(User).get(telegram_user_id)
-            device = session.query(Device).filter(
-                Device.id_device == id_device,
-                Device.id_user == telegram_user_id
-            ).first()
+            device = session.query(Device) \
+                .options(joinedload(Device.macs)) \
+                .filter(
+                    Device.id_device == id_device,
+                    Device.id_user == telegram_user_id
+                ) \
+                .first()
             if not device:
                 bot.answer_callback_query(
                     call.id,
@@ -72,5 +77,5 @@ class DeviceSelectedCallback(BaseCallback):
         else:
             bot.send_message(
                 message.chat.id,
-                "❌ Invalid OTP. Please try again."
+                "❌ Invalid OTP. Please try again from /start."
             )
