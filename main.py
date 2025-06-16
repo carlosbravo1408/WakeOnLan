@@ -1,5 +1,3 @@
-import os
-
 from lib.constants import Constants
 from lib.db import DataBase
 from telegram.callbacks.device_selected_callback import DeviceSelectedCallback

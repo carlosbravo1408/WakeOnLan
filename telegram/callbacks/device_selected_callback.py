@@ -1,3 +1,4 @@
+import time
 from functools import partial
 
 from sqlalchemy.orm import joinedload
@@ -5,8 +6,9 @@ from telebot import TeleBot
 from telebot.types import Message
 
 from lib.constants import Constants
-from lib.db import get_db_session
+from lib.db import get_db_session, db_session
 from lib.otp_handler import OtpHandler
+from lib.smart_plug import create_smart_plug_instance
 from lib.wake_on_lan import WakeOnLan
 from models import Device, User
 from telegram.callbacks.base_callback import BaseCallback
@@ -17,18 +19,13 @@ class DeviceSelectedCallback(BaseCallback):
     has_otp_validation = Constants.HAS_OTP_VALIDATION.lower() in ["1", "true"]
 
     @classmethod
+    # @db_session
     def callback(cls, call, bot: TeleBot):
-        with get_db_session() as session:
+        with get_db_session():
             telegram_user_id = call.from_user.id
             id_device = int(call.data.split(":")[1])
-            user = session.query(User).get(telegram_user_id)
-            device = session.query(Device) \
-                .options(joinedload(Device.macs)) \
-                .filter(
-                    Device.id_device == id_device,
-                    Device.id_user == telegram_user_id
-                ) \
-                .first()
+            user = cls._get_user_from_id(telegram_user_id)
+            device = cls._get_device_from_id(telegram_user_id, id_device)
             if not device:
                 bot.answer_callback_query(
                     call.id,
@@ -46,13 +43,41 @@ class DeviceSelectedCallback(BaseCallback):
                 )
                 bot.register_next_step_handler(
                     call.message,
-                    partial(cls.verify_otp, bot=bot, user=user, device=device)
+                    partial(cls.verify_otp, bot=bot, user_id=user.id_user,
+                            device_id=device.id_device)
                 )
             else:
                 bot.send_message(
                     call.message.chat.id, f"Waking '{device.name}' on LAN."
                 )
+                cls.power_on_smart_plug(device=device)
                 cls.wake_on_lan(device)
+
+    @classmethod
+    def _get_user_from_id(cls, user_id: int):
+        with get_db_session() as session:
+            return session.query(User).get(user_id)
+
+    @classmethod
+    def _get_device_from_id(cls, user_id: int, device_id: int):
+        with get_db_session() as session:
+            return session.query(Device) \
+                .options(joinedload(Device.macs)) \
+                .filter(
+                    Device.id_device == device_id,
+                    Device.id_user == user_id
+                ).first()
+
+    @classmethod
+    def power_on_smart_plug(cls, device: Device):
+        if device.smart_plug:
+            plug = create_smart_plug_instance(
+                manufacturer=device.smart_plug.manufacturer,
+                series=device.smart_plug.series,
+                host=device.smart_plug.ip_address
+            )
+            plug.turn_on()
+            time.sleep(10)
 
     @classmethod
     def wake_on_lan(cls, device: Device):
@@ -62,17 +87,21 @@ class DeviceSelectedCallback(BaseCallback):
                 WakeOnLan(mac_address)
 
     @classmethod
+    @db_session
     def verify_otp(
             cls,
             message: Message,
-            device: Device,
-            user: User,
+            device_id: int,
+            user_id: int,
             bot: TeleBot
     ):
+        user = cls._get_user_from_id(user_id)
+        device = cls._get_device_from_id(user_id, device_id)
         otp = message.text.strip()
         top_handler = OtpHandler(user.otp_secret, user.name)
         if top_handler.verify(otp):
             bot.send_message(message.chat.id, "✅ Valid OTP. Waking PC on LAN.")
+            cls.power_on_smart_plug(device)
             cls.wake_on_lan(device)
         else:
             bot.send_message(
