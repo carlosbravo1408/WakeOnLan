@@ -1,5 +1,7 @@
+import contextvars
 import threading
 from contextlib import contextmanager
+from functools import wraps
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
@@ -8,6 +10,7 @@ from models.base_model import BaseModel
 
 
 DB = "hgrW8WzeIsqDw5lU.db"
+_current_session = contextvars.ContextVar("current_session", default=None)
 
 
 class DataBase:
@@ -35,8 +38,14 @@ class DataBase:
 
 @contextmanager
 def get_db_session():
+    existing_session = _current_session.get()
+    if existing_session is not None:
+        yield existing_session
+        return
+
     db = DataBase()
     session = db.get_session()
+    token = _current_session.set(session)
     try:
         yield session
         session.commit()
@@ -44,4 +53,13 @@ def get_db_session():
         session.rollback()
         raise e
     finally:
+        _current_session.reset(token)
         session.close()
+
+
+def db_session(function):
+    @wraps(function)
+    def wrapper(*args, **kwargs):
+        with get_db_session():
+            return function(*args, **kwargs)
+    return wrapper
