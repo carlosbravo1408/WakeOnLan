@@ -12,6 +12,9 @@ from models import Device, User
 from telegram.callbacks.base_callback import BaseCallback
 
 
+WAKING_MESSAGE = "Device {device} selected, attempting to Wake on Lan"
+
+
 class DeviceSelectedCallback(BaseCallback):
     id = "device"
     has_otp_validation = Constants.HAS_OTP_VALIDATION.lower() in ["1", "true"]
@@ -22,6 +25,7 @@ class DeviceSelectedCallback(BaseCallback):
             telegram_user_id = call.from_user.id
             id_device = int(call.data.split(":")[1])
             user = session.query(User).get(telegram_user_id)
+            cls.remove_interactive_buttons(bot, call.message)
             device = session.query(Device) \
                 .options(joinedload(Device.macs)) \
                 .filter(
@@ -41,8 +45,8 @@ class DeviceSelectedCallback(BaseCallback):
                     return
                 bot.send_message(
                     call.message.chat.id,
-                    f"🔒 Please submit your OTP code to confirm access to '"
-                    f"{device.name}'.",
+                    f"🔒 Please submit your OTP code to confirm access to "
+                    f"'{device.name}'.",
                 )
                 bot.register_next_step_handler(
                     call.message,
@@ -50,7 +54,8 @@ class DeviceSelectedCallback(BaseCallback):
                 )
             else:
                 bot.send_message(
-                    call.message.chat.id, f"Waking '{device.name}' on LAN."
+                    call.message.chat.id, WAKING_MESSAGE.format(
+                        device=device.name)
                 )
                 cls.wake_on_lan(device)
 
@@ -60,6 +65,14 @@ class DeviceSelectedCallback(BaseCallback):
             mac_address = mac.mac_address
             for _ in range(2):
                 WakeOnLan(mac_address)
+
+    @classmethod
+    def remove_interactive_buttons(cls, bot: TeleBot, message: Message):
+        bot.edit_message_reply_markup(
+            chat_id=message.chat.id,
+            message_id=message.message_id,
+            reply_markup=None
+        )
 
     @classmethod
     def verify_otp(
@@ -72,7 +85,9 @@ class DeviceSelectedCallback(BaseCallback):
         otp = message.text.strip()
         top_handler = OtpHandler(user.otp_secret, user.name)
         if top_handler.verify(otp):
-            bot.send_message(message.chat.id, "✅ Valid OTP. Waking PC on LAN.")
+            bot.send_message(
+                message.chat.id, "✅ Valid OTP.\n" + WAKING_MESSAGE.format(
+                        device=device.name))
             cls.wake_on_lan(device)
         else:
             bot.send_message(
