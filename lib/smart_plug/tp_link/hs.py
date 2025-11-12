@@ -41,3 +41,8 @@ class HS(AbstractSmartPlug):
     def turn_off(self):
         _command = {"system": {"set_relay_state": {"state": 0}}}
         return self.exec_command(_command)
+
+    def get_relay_state(self) -> bool:
+        _command = {"system":{"get_sysinfo":None}}
+        _data = self.exec_command(_command)
+        return bool(_data.get("relay_state", 0))

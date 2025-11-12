@@ -80,6 +80,8 @@ class DeviceSelectedCallback(BaseCallback):
                 series=device.smart_plug.series,
                 host=device.smart_plug.ip_address
             )
+            if plug.get_relay_state():
+                return
             plug.turn_on()
             time.sleep(10)
 
