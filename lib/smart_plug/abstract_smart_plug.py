@@ -16,7 +16,7 @@ class AbstractSmartPlug(ABC):
         self._socket.connect((self._host, self._port))
         self._socket.settimeout(self._timeout)
 
-    def exec_command(self, command: Dict[str, Any]) -> str:
+    def exec_command(self, command: Dict[str, Any]) -> Dict[str, Any]:
         cmd = json.dumps(command)
         try:
             self._connect()
@@ -44,4 +44,7 @@ class AbstractSmartPlug(ABC):
         raise NotImplementedError()
 
     def turn_off(self):
+        raise NotImplementedError()
+
+    def get_relay_state(self) -> bool:
         raise NotImplementedError()
